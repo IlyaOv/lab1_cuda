@@ -10,12 +10,12 @@
 //функция ядра
 __global__ void matrixMult(const double *A, const double *B, double *C, int n)
 {
-	int ai = n * (blockDim.y * blockIdx.y + threadIdx.y);
-	int bj = blockDim.x * blockIdx.x + threadIdx.x;
+	int ai = n * (blockDim.y * blockIdx.y + threadIdx.y); // индекс начала строки матрицы A
+	int bj = blockDim.x * blockIdx.x + threadIdx.x; // индекс начала строки матрицы B
 	double sum = 0;
 	for (int k = 0; k < n; k++)
 		sum += A[ai + k] * B[k * n + bj];
-	int index = n * (blockDim.y * blockIdx.y + threadIdx.y) + blockDim.x * blockIdx.x + threadIdx.x;
+	int index = n * (blockDim.y * blockIdx.y + threadIdx.y) + blockDim.x * blockIdx.x + threadIdx.x; // индекс вычисляемого элемента матрицы C 
 	C[index] = sum;
 }
 
@@ -25,13 +25,15 @@ __global__ void matrixMultShared(double* A, double* B, double* C, int n) {
 	int by = blockIdx.y;
 	int tx = threadIdx.x;
 	int ty = threadIdx.y;
-	int aBegin = n * BLOCK_SIZE * by;
-	int aEnd = aBegin + n - 1;
-	int aStep = BLOCK_SIZE;
-	int bBegin = BLOCK_SIZE * bx;
-	int bStep = BLOCK_SIZE * n; 
+	int aBegin = n * BLOCK_SIZE * by; // индекс первой подматрицы A, обработанной блоком
+	int aEnd = aBegin + n - 1; // индекс пследней подматрицы A
+	int aStep = BLOCK_SIZE; // размер шага, используемый для итерации подматриц A
+	int bBegin = BLOCK_SIZE * bx; // индекс первой подматрицы B, обработанной блоком
+	int bStep = BLOCK_SIZE * n; // размер шага, используемый для итерации подматриц B
 	double Csub = 0; 
 	for (int a = aBegin, b = bBegin; a <= aEnd; a += aStep, b += bStep) {
+		// объявление массивов для хранения подматриц в разделяемой памяти
+		// с помощью модификатора __shared__
 		__shared__ double As[BLOCK_SIZE][BLOCK_SIZE];
 		__shared__ double Bs[BLOCK_SIZE][BLOCK_SIZE];
 		As[ty][tx] = A[a + n * ty + tx];
